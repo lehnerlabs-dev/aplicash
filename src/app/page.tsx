@@ -46,7 +46,16 @@ export default async function StorePage() {
                 key={p.id}
                 className="bg-white rounded-xl border border-zinc-200 p-3 flex flex-col"
               >
-                <div className="aspect-square w-full rounded-lg bg-zinc-100 mb-2" />
+                {p.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- arbitrary admin-provided URLs, not a local/optimizable asset
+                  <img
+                    src={p.imageUrl}
+                    alt={p.name}
+                    className="aspect-square w-full rounded-lg bg-zinc-100 mb-2 object-cover"
+                  />
+                ) : (
+                  <div className="aspect-square w-full rounded-lg bg-zinc-100 mb-2" />
+                )}
                 <span className="text-sm font-medium text-zinc-900 leading-snug">
                   {p.name}
                 </span>
