@@ -2,6 +2,8 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { formatCents } from "@/lib/money";
 import { REF_COOKIE } from "@/lib/ref";
+import AddToCartButton from "@/components/add-to-cart-button";
+import CartBadge from "@/components/cart-badge";
 
 export default async function StorePage() {
   const jar = await cookies();
@@ -20,15 +22,18 @@ export default async function StorePage() {
 
   return (
     <div className="flex flex-col flex-1 bg-zinc-50">
-      <header className="bg-white border-b border-zinc-200 px-5 py-4">
-        <h1 className="text-xl font-semibold text-zinc-900">Aplicash</h1>
-        {driverName ? (
-          <p className="text-sm text-zinc-500">
-            Você está comprando através de {driverName}
-          </p>
-        ) : (
-          <p className="text-sm text-zinc-500">Loja dentro do carro</p>
-        )}
+      <header className="bg-white border-b border-zinc-200 px-5 py-4 flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold text-zinc-900">Aplicash</h1>
+          {driverName ? (
+            <p className="text-sm text-zinc-500">
+              Você está comprando através de {driverName}
+            </p>
+          ) : (
+            <p className="text-sm text-zinc-500">Loja dentro do carro</p>
+          )}
+        </div>
+        <CartBadge />
       </header>
 
       <main className="flex-1 px-5 py-6">
@@ -48,6 +53,13 @@ export default async function StorePage() {
                 <span className="mt-1 text-sm font-semibold text-emerald-600">
                   {formatCents(p.priceCents)}
                 </span>
+                <AddToCartButton
+                  product={{
+                    id: p.id,
+                    name: p.name,
+                    priceCents: p.priceCents,
+                  }}
+                />
               </li>
             ))}
           </ul>
