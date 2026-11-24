@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Driver {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  refCode   String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  visits Visit[]
+  orders Order[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  priceCents  Int
+  imageUrl    String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  orderItems OrderItem[]
+}
+
+model Visit {
+  id        String   @id @default(cuid())
+  driver    Driver   @relation(fields: [driverId], references: [id])
+  driverId  String
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  driver          Driver?  @relation(fields: [driverId], references: [id])
+  driverId        String?
+  customerName    String
+  customerPhone   String
+  customerAddress String
+  status          String   @default("pending")
+  totalCents      Int
+  commissionCents Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  items OrderItem[]
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId    String
+  product    Product @relation(fields: [productId], references: [id])
+  productId  String
+  quantity   Int
+  priceCents Int
+}
