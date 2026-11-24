@@ -1,14 +1,17 @@
-// Prisma's CLI (migrate/seed) resolves a relative sqlite "file:" URL relative
-// to prisma/schema.prisma, while the generated runtime client resolves it
-// relative to process.cwd(). To avoid that mismatch on every machine this
-// project runs on, we pin DATABASE_URL to an absolute path computed fresh
-// here, instead of a relative path baked into a committed .env file.
+// Local/dev convenience only. On Vercel (or any host that injects real
+// environment variables), skip entirely: DATABASE_URL and admin creds must
+// be set as real project environment variables there, not written to a
+// .env file that a serverless build step can't hand to the runtime anyway.
+if (process.env.VERCEL) {
+  console.log("[ensure-env] VERCEL detected, skipping local .env setup");
+  process.exit(0);
+}
+
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
 const root = path.join(__dirname, "..");
-const dbPath = path.join(root, "prisma", "dev.db");
 const envPath = path.join(root, ".env");
 
 let contents = "";
@@ -25,8 +28,12 @@ function setVar(key, value) {
   }
 }
 
-setVar("DATABASE_URL", `file:${dbPath}`);
-console.log(`[ensure-env] DATABASE_URL -> file:${dbPath}`);
+if (!/^DATABASE_URL=/m.test(contents)) {
+  console.warn(
+    "[ensure-env] DATABASE_URL is not set in .env — copy .env.example and " +
+      "point it at a Postgres database (see README).",
+  );
+}
 
 // /admin is protected by Basic Auth (see src/proxy.ts) and fails closed if
 // these are unset. Generate a random password on first run per machine
