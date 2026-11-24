@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Aplicash
 
-## Getting Started
+Beta: a storefront rideshare drivers link to via a QR code on a card behind
+the seat. Passengers scan it, browse a small catalog, and check out (payment
+settled with the driver for now — Pix or cash on delivery, no gateway yet).
+Each driver earns a commission on orders attributed to their code.
 
-First, run the development server:
+## Setup
 
 ```bash
+npm install
+npx prisma migrate dev
+npm run db:seed   # demo driver (code DEMO01) + sample products
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`predev`/`prebuild`/`prestart` run `scripts/ensure-env.cjs` automatically,
+which:
+- pins `DATABASE_URL` to an absolute path (works around a Prisma CLI vs.
+  runtime-client path resolution mismatch for relative sqlite URLs)
+- generates `ADMIN_USER`/`ADMIN_PASSWORD` on first run if missing, and
+  prints them to the console — **check the terminal output** the first time
+  you run `npm run dev`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Open `http://localhost:3000`. Visit `http://localhost:3000/r/DEMO01` to see
+the site as a passenger who scanned the demo driver's QR code.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Admin
 
-## Learn More
+`/admin` is protected by HTTP Basic Auth (`src/proxy.ts`) using
+`ADMIN_USER`/`ADMIN_PASSWORD` from `.env`. It fails closed: if those aren't
+set, `/admin` is locked out entirely rather than left open.
 
-To learn more about Next.js, take a look at the following resources:
+- `/admin/products` — add/edit products, set price and an image URL,
+  deactivate or delete
+- `/admin/drivers` — add drivers (auto-generates a unique referral code),
+  print their QR card from `/admin/drivers/[id]/qr`
+- `/admin/orders` — all orders, per-driver visits → orders → conversion →
+  commission owed, and order status (pending/confirmed/delivered/cancelled)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## How attribution works
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+A driver's QR code points at `/r/<code>`, which logs a visit, sets an
+httpOnly cookie, and redirects to `/`. Checkout reads that cookie server-side
+to attribute the order and commission — the storefront URL itself stays
+clean (no `?ref=` query param).
 
-## Deploy on Vercel
+## Stack
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Next.js 16 (App Router, Cache Components) + TypeScript + Tailwind + Prisma
+on SQLite. No auth system beyond the admin Basic Auth gate; no payment
+gateway; cart lives in the browser's `localStorage`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deliberately not built yet
+
+- Real payment (Pix/Mercado Pago) — needs a payment provider account
+- Hosting/deployment — SQLite needs a host with a persistent disk, or a
+  swap to Postgres for serverless hosting; needs an account decision
+- The "driver's own store" marketplace variant (sell their own goods,
+  not just Aplicash's catalog) — validate the core funnel first
+- Fraud/abuse checks on QR attribution
